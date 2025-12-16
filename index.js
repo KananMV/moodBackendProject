@@ -1,6 +1,7 @@
 // For local development - re-export from api/index.js
 // This allows local development with "node index.js"
 // On Vercel, requests are routed to /api via vercel.json rewrites
+const express = require("express"); // Import express for Vercel entrypoint detection
 const apiApp = require("./api/index.js");
 module.exports = apiApp;
 
