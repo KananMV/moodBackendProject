@@ -277,6 +277,13 @@ app.post("/resolve/music-url", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("API running on http://localhost:3000");
-});
+// Export the app for Vercel serverless functions
+module.exports = app;
+
+// For local development
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`API running on http://localhost:${PORT}`);
+  });
+}
