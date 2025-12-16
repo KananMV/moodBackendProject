@@ -1,4 +1,8 @@
-require("dotenv").config();
+// Load dotenv only in local development (not on Vercel)
+// Vercel automatically sets VERCEL=1, so we skip dotenv there
+if (!process.env.VERCEL) {
+  require("dotenv").config();
+}
 
 const express = require("express");
 const OpenAI = require("openai");
@@ -7,6 +11,34 @@ const app = express();
 
 app.use(express.json());
 
+// Validate required environment variables
+function validateEnvVars() {
+  const missing = [];
+  if (!process.env.OPENAI_API_KEY) {
+    missing.push("OPENAI_API_KEY");
+  }
+  return missing;
+}
+
+// Middleware to check environment variables before handling requests
+app.use((req, res, next) => {
+  // Skip validation for health endpoint
+  if (req.path === "/health") {
+    return next();
+  }
+
+  const missing = validateEnvVars();
+  if (missing.length > 0) {
+    return res.status(500).json({
+      error: "Server configuration error",
+      message: `Missing required environment variables: ${missing.join(", ")}`,
+      details: "Please configure the required environment variables in your deployment settings.",
+    });
+  }
+  next();
+});
+
+// Initialize OpenAI client (will fail gracefully if key is missing due to middleware)
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -191,6 +223,16 @@ Rules:
     return [];
   }
 }
+
+// ---------------- HEALTH CHECK ENDPOINT ----------------
+// GET /health
+app.get("/health", (req, res) => {
+  const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
+  return res.json({
+    ok: true,
+    hasOpenAIKey,
+  });
+});
 
 // ---------------- GET ENDPOINT ----------------
 // GET /mood/songs?mood=happy
